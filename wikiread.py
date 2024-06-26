@@ -2,14 +2,19 @@ import numpy as np
 import pandas as pd
 
 # URL containing the HTML table
-url = 'https://de.wikipedia.org/wiki/Liste_von_Windkraftanlagen_in_Nordrhein-Westfalen'
+urls = ['https://de.wikipedia.org/wiki/Liste_von_Windkraftanlagen_in_Nordrhein-Westfalen',
+        'https://de.wikipedia.org/wiki/Liste_von_Windkraftanlagen_in_Baden-W%C3%BCrttemberg']
 
 # Read the table(s) from the URL
-dfs = pd.read_html(url)
+dfs = pd.read_html(urls[1])
 
-# Display the first DataFrame
 print(dfs[0].columns)
-df = dfs[0].dropna(axis=0)
+
+df = dfs[0]
+df = df.dropna(subset=['Koordinaten'])
+#print(df.to_string())
+
+
 
 import geopandas as gpd
 import pandas as pd
@@ -20,6 +25,7 @@ dfdata = pd.DataFrame(columns=['City', 'Longitude', 'Latitude'])
 
 
 
+print(dfdata.to_string())
 
 
 for index, row in df.iterrows():
@@ -35,11 +41,13 @@ for index, row in df.iterrows():
         'Latitude': ps[0],
         'Longitude': ps2[1]
     }
+    print(position)
     dfdata = dfdata._append(wikis, ignore_index=True)
+
+#print(dfdata.to_string())
 
 dfdata['Latitude'] = dfdata['Latitude'].str.replace(',', '.').astype(float)
 dfdata['Longitude'] = dfdata['Longitude'].str.replace(',', '.').astype(float)
-print(dfdata.to_string())
 
 
 
@@ -55,11 +63,12 @@ gdf = gpd.GeoDataFrame(dfdata, geometry=gpd.points_from_xy(dfdata.Longitude, dfd
 # Set the coordinate reference system (CRS) to WGS84 (EPSG:4326)
 gdf.set_crs(epsg=4326, inplace=True)
 
-# Load a world basemap
-world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+# Step 5: Load the shapefile into a GeoDataFrame
+shapefile_path = 'ne_110m_admin_0_countries.shp'  # Update this path to where you extracted the shapefile
+world = gpd.read_file(shapefile_path)
 
-# Filter to get Germany only
-germany = world[world.name == "Germany"]
+# Step 6: Filter the GeoDataFrame for Germany
+germany = world[world['NAME'] == "Germany"]
 
 # Plot the basemap of Germany
 ax = germany.plot(color='whitesmoke', edgecolor='black')
@@ -68,7 +77,7 @@ ax = germany.plot(color='whitesmoke', edgecolor='black')
 gdf.plot(ax=ax, marker='o', color='red', markersize=1)
 
 # Add titles and labels
-plt.title('Cities in Germany')
+plt.title('Windräder')
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 
